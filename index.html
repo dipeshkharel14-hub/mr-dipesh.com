@@ -3,88 +3,127 @@
 <head>
     <title>Flappy Dipesh</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #70c5ce; font-family: sans-serif; text-align: center; }
-        canvas { display: block; margin: 20px auto; border: 5px solid #fff; background: #fff; }
+        body { margin: 0; overflow: hidden; background: #70c5ce; font-family: 'Arial', sans-serif; text-align: center; }
+        canvas { display: block; margin: 20px auto; border: 5px solid #fff; background: #fff; cursor: pointer; }
         h1 { color: white; text-shadow: 2px 2px #000; }
     </style>
 </head>
 <body>
     <h1>MR. DIPESH GAME</h1>
     <canvas id="gameCanvas" width="320" height="480"></canvas>
-    <p>Press <b>Space</b> or <b>Tap</b> to Jump!</p>
+    <p>Press <b>Space</b> or <b>Click Canvas</b> to Jump/Restart!</p>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // GAME SETTINGS
-        let bird = { x: 50, y: 150, width: 40, height: 40, gravity: 0.6, lift: -10, velocity: 0 };
-        let pipes = [];
+        // GAME STATE
+        let isGameOver = false;
         let score = 0;
         let frame = 0;
+        let bird = { x: 50, y: 150, width: 45, height: 45, gravity: 0.6, lift: -8, velocity: 0 };
+        let pipes = [];
 
-        // CUSTOM HEAD IMAGE
+        // LOAD HEAD IMAGE
         const headImg = new Image();
-        // REPLACE THIS URL with your photo link later
+        // Default placeholder - replace with 'me.png' once you upload your photo to GitHub
         headImg.src = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'; 
 
         function drawBird() {
             ctx.save();
             ctx.beginPath();
-            ctx.arc(bird.x + 20, bird.y + 20, 20, 0, Math.PI * 2);
+            ctx.arc(bird.x + 22, bird.y + 22, 22, 0, Math.PI * 2);
             ctx.closePath();
             ctx.clip();
             ctx.drawImage(headImg, bird.x, bird.y, bird.width, bird.height);
             ctx.restore();
         }
 
+        function reset() {
+            bird.y = 150;
+            bird.velocity = 0;
+            pipes = [];
+            score = 0;
+            isGameOver = false;
+            frame = 0;
+        }
+
         function update() {
+            if (isGameOver) return;
+
             bird.velocity += bird.gravity;
             bird.y += bird.velocity;
 
-            if (frame % 90 === 0) {
-                let pipeHeight = Math.random() * (canvas.height / 2);
-                pipes.push({ x: canvas.width, top: pipeHeight, bottom: canvas.height - pipeHeight - 120 });
+            if (frame % 100 === 0) {
+                let pipeHeight = Math.random() * (canvas.height / 2.5) + 50;
+                pipes.push({ x: canvas.width, top: pipeHeight, bottom: canvas.height - pipeHeight - 130 });
             }
 
             for (let i = pipes.length - 1; i >= 0; i--) {
                 pipes[i].x -= 2;
-                // Collision
-                if (bird.x < pipes[i].x + 50 && bird.x + bird.width > pipes[i].x &&
-                    (bird.y < pipes[i].top || bird.y + bird.height > canvas.height - pipes[i].bottom)) {
-                    reset();
+
+                // Collision Detection
+                if (bird.x + 5 < pipes[i].x + 50 && bird.x + bird.width - 5 > pipes[i].x &&
+                    (bird.y + 5 < pipes[i].top || bird.y + bird.height - 5 > canvas.height - pipes[i].bottom)) {
+                    isGameOver = true;
                 }
+
                 if (pipes[i].x + 50 < 0) {
                     pipes.splice(i, 1);
                     score++;
                 }
             }
 
-            if (bird.y > canvas.height || bird.y < 0) reset();
+            if (bird.y > canvas.height || bird.y < 0) isGameOver = true;
         }
 
         function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Clear Background
+            ctx.fillStyle = "#70c5ce";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
             drawBird();
+
+            // Draw Pipes
             ctx.fillStyle = "#2ecc71";
             pipes.forEach(p => {
                 ctx.fillRect(p.x, 0, 50, p.top);
                 ctx.fillRect(p.x, canvas.height - p.bottom, 50, p.bottom);
             });
-            ctx.fillStyle = "#000";
-            ctx.font = "20px Arial";
-            ctx.fillText("Score: " + score, 10, 25);
+
+            // Draw Score
+            ctx.fillStyle = "white";
+            ctx.strokeStyle = "black";
+            ctx.font = "bold 30px Arial";
+            ctx.fillText(score, canvas.width/2 - 10, 50);
+            ctx.strokeText(score, canvas.width/2 - 10, 50);
+
+            if (isGameOver) {
+                ctx.fillStyle = "rgba(0,0,0,0.5)";
+                ctx.fillRect(0,0, canvas.width, canvas.height);
+                ctx.fillStyle = "white";
+                ctx.font = "25px Arial";
+                ctx.fillText("GAME OVER", 85, 220);
+                ctx.font = "15px Arial";
+                ctx.fillText("Click to Play Again", 95, 260);
+            }
         }
 
-        function reset() {
-            bird.y = 150; bird.velocity = 0; pipes = []; score = 0;
+        function handleInput() {
+            if (isGameOver) {
+                reset();
+            } else {
+                bird.velocity = bird.lift;
+            }
         }
 
-        window.addEventListener('keydown', (e) => { if(e.code === 'Space') bird.velocity = bird.lift; });
-        canvas.addEventListener('touchstart', () => bird.velocity = bird.lift);
+        window.addEventListener('keydown', (e) => { if(e.code === 'Space') handleInput(); });
+        canvas.addEventListener('mousedown', handleInput);
 
         function loop() {
-            update(); draw(); frame++;
+            update();
+            draw();
+            frame++;
             requestAnimationFrame(loop);
         }
         loop();
