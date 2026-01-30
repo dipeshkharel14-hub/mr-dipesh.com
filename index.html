@@ -1,46 +1,93 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlexFrame Optical</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Flappy Dipesh</title>
     <style>
-        .hero-section { background: #f8f9fa; padding: 100px 0; text-align: center; }
-        .feature-box { padding: 40px; border-radius: 10px; transition: 0.3s; }
-        .feature-box:hover { box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        body { margin: 0; overflow: hidden; background: #70c5ce; font-family: sans-serif; text-align: center; }
+        canvas { display: block; margin: 20px auto; border: 5px solid #fff; background: #fff; }
+        h1 { color: white; text-shadow: 2px 2px #000; }
     </style>
 </head>
 <body>
+    <h1>MR. DIPESH GAME</h1>
+    <canvas id="gameCanvas" width="320" height="480"></canvas>
+    <p>Press <b>Space</b> or <b>Tap</b> to Jump!</p>
 
-    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="#">FLEXFRAME</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="#">Home</a>
-                <a class="nav-link" href="#">Products</a>
-            </div>
-        </div>
-    </nav>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
 
-    <header class="hero-section">
-        <div class="container">
-            <h1 class="display-4 fw-bold">Clear Vision, Better Life</h1>
-            <p class="lead">Premium eyewear for the modern generation.</p>
-            <button class="btn btn-primary btn-lg">Shop Now</button>
-        </div>
-    </header>
+        // GAME SETTINGS
+        let bird = { x: 50, y: 150, width: 40, height: 40, gravity: 0.6, lift: -10, velocity: 0 };
+        let pipes = [];
+        let score = 0;
+        let frame = 0;
 
-    <section class="container my-5">
-        <div class="row text-center">
-            <div class="col-md-4">
-                <div class="feature-box border">
-                    <h3>Frames</h3>
-                    <p>Latest collections for 2026.</p>
-                </div>
-            </div>
-            </div>
-    </section>
+        // CUSTOM HEAD IMAGE
+        const headImg = new Image();
+        // REPLACE THIS URL with your photo link later
+        headImg.src = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'; 
 
+        function drawBird() {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(bird.x + 20, bird.y + 20, 20, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.clip();
+            ctx.drawImage(headImg, bird.x, bird.y, bird.width, bird.height);
+            ctx.restore();
+        }
+
+        function update() {
+            bird.velocity += bird.gravity;
+            bird.y += bird.velocity;
+
+            if (frame % 90 === 0) {
+                let pipeHeight = Math.random() * (canvas.height / 2);
+                pipes.push({ x: canvas.width, top: pipeHeight, bottom: canvas.height - pipeHeight - 120 });
+            }
+
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                pipes[i].x -= 2;
+                // Collision
+                if (bird.x < pipes[i].x + 50 && bird.x + bird.width > pipes[i].x &&
+                    (bird.y < pipes[i].top || bird.y + bird.height > canvas.height - pipes[i].bottom)) {
+                    reset();
+                }
+                if (pipes[i].x + 50 < 0) {
+                    pipes.splice(i, 1);
+                    score++;
+                }
+            }
+
+            if (bird.y > canvas.height || bird.y < 0) reset();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBird();
+            ctx.fillStyle = "#2ecc71";
+            pipes.forEach(p => {
+                ctx.fillRect(p.x, 0, 50, p.top);
+                ctx.fillRect(p.x, canvas.height - p.bottom, 50, p.bottom);
+            });
+            ctx.fillStyle = "#000";
+            ctx.font = "20px Arial";
+            ctx.fillText("Score: " + score, 10, 25);
+        }
+
+        function reset() {
+            bird.y = 150; bird.velocity = 0; pipes = []; score = 0;
+        }
+
+        window.addEventListener('keydown', (e) => { if(e.code === 'Space') bird.velocity = bird.lift; });
+        canvas.addEventListener('touchstart', () => bird.velocity = bird.lift);
+
+        function loop() {
+            update(); draw(); frame++;
+            requestAnimationFrame(loop);
+        }
+        loop();
+    </script>
 </body>
 </html>
